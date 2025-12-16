@@ -24,6 +24,7 @@ metadata:
   name: currencyservice
   labels:
     app: currencyservice
+    client: google
 spec:
   selector:
     matchLabels:
