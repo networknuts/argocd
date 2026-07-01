@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: webapp
+  namespace: argocd # The namespace where Argo CD is installed
+spec:
+  project: default # Default project provided by Argo CD
+  source:
+    repoURL: 'https://github.com/networknuts/argocd.git' # Your Git repo URL
+    targetRevision: HEAD # Git branch, tag, or commit hash
+    path: ch-04 # Path within the repository containing the YAML files
+  destination:
+    server: 'https://kubernetes.default.svc' # Target cluster URL (this means the local cluster)
+    namespace: dev # Target namespace where resources will be deployed
+  syncPolicy:
+    automated: # Enables automated sync and self-healing
+      prune: true # Deletes resources from K8s if removed from Git
+      selfHeal: true # Overwrites manual changes made directly in the cluster
