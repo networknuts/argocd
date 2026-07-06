@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  # 1. Services: Define where notifications go
+  service.slack: |
+    token: $slack-token
+
+  # 2. Templates: Define the message format
+  template.app-sync-succeeded: |
+    message: |
+      🎉 Application **{{.app.metadata.name}}** synced successfully!
+      Revision: {{.app.status.sync.revision}}
+      View details: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}
+
+  # 3. Triggers: Define the conditions for sending
+  trigger.on-sync-succeeded: |
+    - when: app.status.operationState.phase in ['Succeeded']
+      send: [app-sync-succeeded]
+  # 4. Template used for failed deployments
+  template.app-sync-failed: |
+    message: |
+      🚨 **Application {{.app.metadata.name}} deployment failed.**
+      Revision: {{.app.status.sync.revision}}
+      Message: {{.app.status.operationState.message}}
+      Details: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}
+
+  # --- TRIGGERS ---
+  # Trigger that activates when the phase is Succeeded and the health is Healthy
+  trigger.on-deployed: |
+    - when: app.status.operationState != nil and app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
+      oncePer: app.status.operationState.finishedAt
+      send:
+        - app-sync-success
+
+  # Trigger that activates when the phase is Error or Failed
+  trigger.on-deploy-failed: |
+    - when: app.status.operationState != nil and app.status.operationState.phase in ['Error', 'Failed']
+      oncePer: app.status.operationState.finishedAt
+      send:
+        - app-sync-failed
