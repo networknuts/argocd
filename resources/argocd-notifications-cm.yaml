@@ -41,3 +41,27 @@ data:
       oncePer: app.status.operationState.finishedAt
       send:
         - app-sync-failed
+   # 1. Define the custom deletion trigger
+  trigger.on-app-deleted: |
+    - description: Application deletion has been initiated.
+      when: app.metadata.deletionTimestamp != nil
+      send:
+        - app-deleted-slack-notification
+
+  # 2. Define the payload template (Slack example)
+  template.app-deleted-slack-notification: |
+    message: |
+      ⚠️ Application {{.app.metadata.name}} is being deleted!
+    slack:
+      attachments: |
+        [{
+          "title": "Argo CD Alert: Application Deletion Initiated",
+          "color": "#FF0000",
+          "fields": [
+            {"title": "Application Name", "value": "{{.app.metadata.name}}", "short": true},
+            {"title": "Project", "value": "{{.app.spec.project}}", "short": true},
+            {"title": "Cluster", "value": "{{.app.spec.destination.server}}", "short": false},
+            {"title": "Namespace", "value": "{{.app.spec.destination.namespace}}", "short": true},
+            {"title": "Deletion Initiated At", "value": "{{.app.metadata.deletionTimestamp}}", "short": false}
+          ]
+        }]
