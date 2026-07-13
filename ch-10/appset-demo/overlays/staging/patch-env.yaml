@@ -9,7 +9,7 @@ spec:
         environment: staging
     spec:
       containers:
-     - name: my-app
+     - name: boxone
        image: nginx:latest
        resources:
          limits:

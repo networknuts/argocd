@@ -9,7 +9,7 @@ spec:
         environment: dev
     spec:
       containers:
-     - name: my-app
+     - name: boxone
        image: nginx:1.21
        resources:
          limits:
