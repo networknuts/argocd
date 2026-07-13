@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: multi-cluster-app
+  namespace: argocd
+spec:
+  generators:
+    - clusters: {} # Targets ALL clusters registered in Argo CD
+  template:
+    metadata:
+      name: '{{name}}-my-app' # Dynamically renders cluster name
+    spec:
+      project: default
+      source:
+        repoURL: 'https://github.com/networknuts/argocd.git'
+        targetRevision: HEAD
+        path: ch-04
+      destination:
+        server: '{{server}}' # Dynamically injects the API server URL
+        namespace: production
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
