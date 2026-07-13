@@ -9,11 +9,11 @@ spec:
         environment: prod
     spec:
       containers:
-     - name: boxone
-       image: nginx:1.21
-       resources:
-         limits:
-           memory: 100Mi
-         requests:
-           cpu: 50m
-           memory: 100Mi
+        - name: boxone
+          image: nginx:1.21
+          resources:
+            limits:
+              memory: 100Mi
+            requests:
+              cpu: 50m
+              memory: 100Mi

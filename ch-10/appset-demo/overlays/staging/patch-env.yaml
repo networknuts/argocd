@@ -9,12 +9,12 @@ spec:
         environment: staging
     spec:
       containers:
-     - name: boxone
-       image: nginx:latest
-       resources:
-         limits:
-           cpu: 20m
-           memory: 30Mi
-         requests:
-           cpu: 20m
-           memory: 30Mi
+        - name: boxone
+          image: nginx:latest
+          resources:
+            limits:
+              cpu: 20m
+              memory: 30Mi
+            requests:
+              cpu: 20m
+              memory: 30Mi

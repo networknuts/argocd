@@ -3,18 +3,19 @@ kind: Deployment
 metadata:
   name: my-app
 spec:
+  replicas: 3
   template:
     metadata:
       labels:
         environment: dev
     spec:
       containers:
-     - name: boxone
-       image: nginx:1.21
-       resources:
-         limits:
-           cpu: 100m
-           memory: 100Mi
-         requests:
-           cpu: 50m
-           memory: 50Mi
+        - name: boxone
+          image: nginx:1.21
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
