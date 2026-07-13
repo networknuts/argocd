@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  template:
+    metadata:
+      labels:
+        environment: prod
+    spec:
+      containers:
+     - name: boxone
+       image: nginx:1.21
+       resources:
+         limits:
+           memory: 100Mi
+         requests:
+           cpu: 50m
+           memory: 100Mi
