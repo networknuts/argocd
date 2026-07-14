@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: frontend-project
+  namespace: argocd
+spec:
+  description: "Project for the frontend team with restricted developer RBAC"
+
+  # Repositories this project is allowed to pull manifests from
+  sourceRepos:
+  - 'https://github.com/networknuts/argocd.git'
+
+  # Destinations where applications in this project can deploy
+  destinations:
+  - namespace: frontend
+    server: https://kubernetes.default.svc
+
+  # Permitted cluster-scoped resource types (none for basic apps)
+  clusterResourceWhitelist: []
+
+  # Permitted namespace-scoped resource types
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+
+  # Project-level RBAC definitions
+  roles:
+  - name: developer
+    description: "Can sync and view apps, but cannot create or delete them"
+    policies:
+    # Format: p, <role-name>, <resource>, <action>, <project>/<app>, <effect>
+    - p, proj:frontend-project:developer, applications, get, frontend-project/*, allow
+    - p, proj:frontend-project:developer, applications, sync, frontend-project/*, allow
+
+    # Optional: Bind this project role to an external OIDC/GitHub group
+    groups:
+    - 'your-github-org:frontend-dev-team'

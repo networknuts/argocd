@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: appone
+  namespace: argocd # The namespace where Argo CD is installed
+  annotations:
+    # Subscribes the "kubernetes-argocd" to sync success notifications
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: kubernetes-argocd
+
+    # Subscribes the "kubernetes-argocd" to sync failure notifications
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: kubernetes-argocd
+    # Subscribes on deletion
+    notifications.argoproj.io/subscribe.on-deleted.slack: kubernetes-argocd
+  finalizers:       ## USE ONLY ONE OPTION
+    - resources-finalizer.argocd.argoproj.io  # This enables foreground CASCADE delete
+    # Alternatively, you can use background cascading deletion
+    # - resources-finalizer.argocd.argoproj.io/background  # This enable background CASCADE delete
+spec:
+  project: default # Default project provided by Argo CD
+  source:
+    repoURL: 'https://github.com/networknuts/argocd.git' # Your Git repo URL
+    targetRevision: HEAD # Git branch, tag, or commit hash
+    path: ch-04 # Path within the repository containing the YAML files
+  destination:
+    server: 'https://kubernetes.default.svc' # Target cluster URL (this means the local cluster)
+    namespace: dev # Target namespace where resources will be deployed
+  syncPolicy:
+    ### CORE SYNC POLICY
+    automated: # Enables automated sync and self-healing
+      prune: true # Deletes resources from K8s if removed from Git
+      selfHeal: true # Overwrites manual changes made directly in the cluster
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+      refresh: true
+    ### SYNC OPTIONS
+    syncOptions:
+      - Prune=confirm
+      - Delete=confirm
+      - CreateNamespace=true

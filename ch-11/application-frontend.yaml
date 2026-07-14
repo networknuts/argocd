@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend-dashboard
+  namespace: argocd
+spec:
+  # Links the application directly to your scoped RBAC policy
+  project: frontend-project
+
+  source:
+    repoURL: 'https://github.com/networknuts/argocd.git'
+    targetRevision: HEAD
+    path: ch-04
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: frontend
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
