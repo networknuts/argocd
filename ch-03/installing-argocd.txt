@@ -1,0 +1,35 @@
+### Installing ArgoCD - from Gateway / JumpServer (IP=192.168.1.8 / 10.0.0.199)
+
+kubectl create namespace argocd
+kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argocd/stable/manifests/install.yaml
+
+### Access ArgoCD UI using Workstation
+
+#1 - SSH to JumpServer
+kubectl port-forward svc/argocd-server -n argocd 8080:443 --address 0.0.0.0 &
+
+#2 - Open another terminal on your workstation 
+     Generate your ssh keys using "ssh-keygen"
+ssh -L 8443:localhost:8080 alok@192.168.1.8 -i /home/alok/.ssh/id_edxxxx
+
+#3 - Open the browser
+http://localhost:8443
+
+#4 - Default username is admin. Get the initial password from a secret using
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+
+### Install ArgoCD CLI
+
+#1 Download the latest binary
+curl -sSL -o argocd-linux-amd64 \
+https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+
+#2 Install it with executable permissions to your system path
+sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+
+#3 Clean up the downloaded installer file
+rm argocd-linux-amd64
+
+#4 Verify
+argocd version --client
+

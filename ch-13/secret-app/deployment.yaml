@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbapp
+  labels:
+    app: mysql
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: boxone
+        image: docker.io/library/mysql:latest
+        volumeMounts:
+        - name: sealed-test
+          mountPath: "/tmp/mysql"
+          readOnly: true
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: my-dbcreds
+              key: password
+      volumes:
+      - name: sealed-test
+        secret:
+          secretName: my-dbcreds
+     
