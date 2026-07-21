@@ -10,4 +10,7 @@ tar -xvzf kubeseal-${KUBESEAL_VERSION}-linux-amd64.tar.gz kubeseal
 sudo install -m 755 kubeseal /usr/local/bin/kubeseal
 ## file ends here
 
+#2 - Install Kubeseal Controller
 
+helm repo add sealed-secrets https://bitnami.github.io/sealed-secrets
+helm -n kube-system install my-sealed-secrets sealed-secrets/sealed-secrets
