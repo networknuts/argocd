@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cache-warmer
+  annotations: 
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-weight: "1"
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    metadata:
+      name: cache-warmer
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: warmer
+        image: curlimages/curl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Starting cache warming..."
+          until curl -f http://simple-app-service/health; do
+            echo "Waiting for app to be ready..."
+            sleep 5
+          done
+          echo "Warming cache for home page..."
+          curl -s http://simple-app-service/ > /dev/null
+          echo "Warming cache for API endpoint..."
+          curl -s http://simple-app-service/api/data > /dev/null
+          echo "Cache warming completed successfully!"

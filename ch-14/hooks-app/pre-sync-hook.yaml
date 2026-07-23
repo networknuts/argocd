@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: environment-setup
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-weight: "1"
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: setup
+        image: busybox:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Preparing environment for deployment..."
+          echo "Checking system requirements..."
+          sleep 3
+          echo "Validating configuration..."
+          sleep 2
+          echo "Environment setup complete!"
