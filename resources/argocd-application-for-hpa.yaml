@@ -1,0 +1,33 @@
+############################
+##Argo application for HPA##
+############################
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argolab-production
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/networknuts/argocd.git' 
+    targetRevision: HEAD
+    path: ch-05 # Path for YAML
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: production
+  
+  
+  ignoreDifferences: #Ignore the dynamic replica count managed by the cluster's HPA controller
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true  #IMP:Tells Argo CD not to overwrite ignored fields during automated syncs

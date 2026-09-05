@@ -1,0 +1,59 @@
+#########################
+#### HPA with ArgoCD ####
+#########################
+
+##Step #1 - Create Deployment 
+
+---
+#file start here
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argolab
+  namespace: production
+  labels:
+    app: argoapp
+spec:
+  # IMPORTANT: 'replicas' is completely removed.
+  # This prevents GitOps drift detection from triggering on scale events.
+  selector:
+    matchLabels:
+      app: argoapp
+  template:
+    metadata:
+      labels:
+        app: argoapp
+    spec:
+      containers:
+      - name: boxone
+        image: nginx:1.27
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 200m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 64Mi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: argolab-hpa
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: argolab
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
