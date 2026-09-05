@@ -2,6 +2,9 @@
 #### HPA with ArgoCD ####
 #########################
 
+# Get application from resources
+# argocd-application-for-hpa.yaml
+
 ##Step #1 - Create Deployment 
 
 ---
