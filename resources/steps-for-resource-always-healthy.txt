@@ -39,7 +39,9 @@ data:
     return hs
 
 ### 
-Example for application-specific health overrides by modifying the global Lua script to check the metadata labels or annotations of the resource. You then simply label the resources in the specific applications you want to target.
+Example for application-specific health overrides by modifying the 
+global Lua script to check the metadata labels or annotations of the resource. You then simply label the resources in the specific 
+applications you want to target.
 
 Step #1 
 
