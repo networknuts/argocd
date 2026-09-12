@@ -1,0 +1,330 @@
+# ============================================================
+# Wave -3: Custom Resource Definitions (CRDs)
+# CRDs must exist before any custom resources can be created
+# ============================================================
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: certificates.cert-manager.io
+  annotations:
+    # CRDs deploy first since other resources may depend on them
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  group: cert-manager.io
+  names:
+    kind: Certificate
+    listKind: CertificateList
+    plural: certificates
+    singular: certificate
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+
+---
+# ============================================================
+# Wave -2: Namespaces
+# Namespaces must exist before resources can be created in them
+# ============================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: myapp-production
+  annotations:
+    # Namespaces deploy early to ensure they exist for other resources
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    environment: production
+    team: platform
+
+---
+# ============================================================
+# Wave -1: RBAC, Secrets, and ConfigMaps
+# Configuration resources must exist before pods reference them
+# ============================================================
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: myapp-service-account
+  namespace: myapp-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: myapp-role
+  namespace: myapp-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: myapp-rolebinding
+  namespace: myapp-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+subjects:
+  - kind: ServiceAccount
+    name: myapp-service-account
+    namespace: myapp-production
+roleRef:
+  kind: Role
+  name: myapp-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+  namespace: myapp-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+type: Opaque
+stringData:
+  username: myapp_user
+  password: "secure-password-here"
+  connection_string: "postgres://myapp_user:secure-password-here@postgres:5432/myapp"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: myapp-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+data:
+  LOG_LEVEL: "info"
+  CACHE_TTL: "300"
+  FEATURE_FLAGS: |
+    {
+      "new_dashboard": true,
+      "beta_api": false
+    }
+
+---
+# ============================================================
+# Wave 0: Services and PersistentVolumeClaims
+# Services should exist before deployments for DNS resolution
+# PVCs should exist before StatefulSets that use them
+# ============================================================
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: myapp-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: fast-ssd
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: myapp-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+  clusterIP: None  # Headless service for StatefulSet
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-api
+  namespace: myapp-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  selector:
+    app: myapp-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+
+---
+# ============================================================
+# Wave 1: Database StatefulSets
+# Databases deploy before applications that depend on them
+# ============================================================
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: myapp-production
+  annotations:
+    # Database deploys in wave 1, after services and PVCs
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: myapp
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+          # Readiness probe ensures ArgoCD waits for database to be ready
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-data
+
+---
+# ============================================================
+# Wave 2: Application Deployments
+# Applications deploy after their database dependencies
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-api
+  namespace: myapp-production
+  annotations:
+    # Application deploys after database is healthy
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp-api
+  template:
+    metadata:
+      labels:
+        app: myapp-api
+    spec:
+      serviceAccountName: myapp-service-account
+      containers:
+        - name: api
+          image: myapp/api:v2.1.0
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: connection_string
+          # Readiness probe ensures traffic only routes to healthy pods
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+---
+# ============================================================
+# Wave 3: Ingress and External Access
+# Ingress deploys last after services and backends are ready
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: myapp-ingress
+  namespace: myapp-production
+  annotations:
+    # Ingress is the final wave - all backends must be ready
+    argocd.argoproj.io/sync-wave: "3"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.myapp.example.com
+      secretName: myapp-tls
+  rules:
+    - host: api.myapp.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: myapp-api
+                port:
+                  number: 8080
