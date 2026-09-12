@@ -1,0 +1,87 @@
+### Configure ArgoCD to treat certain resources as 
+### Always Healthy
+
+
+Step #1 
+
+kubectl edit configmap argocd-cm -n argocd
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  resource.customizations: |
+    # Replace 'apps/CustomResource' or 'apiextensions.k8s.io/CustomResource' with your group/kind
+    your-api-group/YourKind:
+      health.lua: |
+        hs = {}
+        hs.status = "Healthy"
+        hs.message = "Resource is always healthy"
+        return hs
+---
+Example for Pod
+---
+
+
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  # Example for a core Pod resource treated as always healthy
+  resource.customizations.health.core_Pod: |
+    hs = {}
+    hs.status = "Healthy"
+    hs.message = "Forced to be always healthy"
+    return hs
+
+### 
+Example for application-specific health overrides by modifying the global Lua script to check the metadata labels or annotations of the resource. You then simply label the resources in the specific applications you want to target.
+
+Step #1 
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  resource.customizations.health.apps_ReplicaSet: |
+    hs = {}
+    -- Check if the specific label exists on the ReplicaSet
+    if obj.metadata.labels ~= nil and obj.metadata.labels["argo-health-override"] == "always-healthy" then
+      hs.status = "Healthy"
+      hs.message = "Forced to Healthy via application-specific label override"
+      return hs
+    end
+    
+    -- Fallback to standard ArgoCD ReplicaSet health logic if label is missing
+    if obj.status ~= nil and obj.status.replicas ~= nil then
+      if obj.spec.replicas == obj.status.readyReplicas then
+        hs.status = "Healthy"
+        hs.message = "ReplicaSet is healthy"
+        return hs
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "Waiting for replicas to be ready"
+    return hs
+
+
+
+
+Step #2
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: my-replicaset
+  labels:
+    argo-health-override: "always-healthy" # This triggers the custom Lua condition
+spec:
+  replicas: 3
+  # ... rest of your spec
+
