@@ -3,16 +3,16 @@ kind: Deployment
 metadata:
   name: my-app
   labels:
-    app: ngin
+    app: nginxx
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ngin
+      app: nginxx
   template:
     metadata:
       labels:
-        app: ngin
+        app: nginxx
     spec:
       containers:
       - name: boxone
