@@ -1,0 +1,47 @@
+data:
+  policy.csv: |
+    # Applications - the most common resource
+    p, role:app-viewer, applications, get, */*, allow
+
+    p, role:app-syncer, applications, get, */*, allow
+    p, role:app-syncer, applications, sync, */*, allow
+
+    p, role:app-admin, applications, *, */*, allow
+
+    # Available application actions:
+    # get, create, update, delete, sync, override, action
+
+    # Logs
+    p, role:log-viewer, logs, get, */*, allow
+
+    # Exec (terminal access)
+    p, role:exec-user, exec, create, */*, allow
+
+    # Repositories
+    p, role:repo-admin, repositories, get, *, allow
+    p, role:repo-admin, repositories, create, *, allow
+    p, role:repo-admin, repositories, update, *, allow
+    p, role:repo-admin, repositories, delete, *, allow
+
+    # Clusters
+    p, role:cluster-admin, clusters, get, *, allow
+    p, role:cluster-admin, clusters, create, *, allow
+    p, role:cluster-admin, clusters, update, *, allow
+    p, role:cluster-admin, clusters, delete, *, allow
+
+    # Projects
+    p, role:project-admin, projects, get, *, allow
+    p, role:project-admin, projects, create, *, allow
+    p, role:project-admin, projects, update, *, allow
+    p, role:project-admin, projects, delete, *, allow
+
+    # Certificates
+    p, role:cert-admin, certificates, get, *, allow
+    p, role:cert-admin, certificates, create, *, allow
+
+    # GPG keys
+    p, role:gpgkey-admin, gpgkeys, get, *, allow
+    p, role:gpgkey-admin, gpgkeys, create, *, allow
+
+    # Extensions
+    p, role:ext-user, extensions, invoke, *, allow

@@ -1,0 +1,39 @@
+====
+In configmap, argocd-cm, under namespace: argocd
+
+
+apiVersion: v1
+data:
+  accounts.alok: login
+  accounts.arnav: login
+  accounts.aryan: login
+  exec.enabled: "true"
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+  name: argocd-cm
+  namespace: argocd
+
+====
+In configmap, argocd-rbac-cm, under namespace: argocd
+
+
+data:
+  policy.csv: |
+    p, role:readonly-user, applications, get, default/myapp-*, allow
+    p, role:readonly-user, applications, sync, default/myapp-*, allow
+    p, role:readonly-user, applications, action/apps/Deployment/restart, default/myapp-*, allow
+    p, role:readonly-user, exec, create, default/myapp-*, allow
+    g, arnav, role:readonly-user
+    g, aryan, role:readonly-user
+
+
+
+So, our users “arnav & aryan” will have permission of view(get) the applications, sync the applications, restart the deployments, and exec i.e login to the terminal of the pod (if enabled exec) for all the applications whose name starts with “myapp-”
+
+====
+argocd account list
+argocd account update-password - account arnav - new-password test@1#
+
