@@ -24,7 +24,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/networknuts/argocd.git
+        repoURL: https://github.com/bhritis/argocd.git
         targetRevision: HEAD
         path: ch-10/appset-demo/overlays/{{env}}
       destination:
