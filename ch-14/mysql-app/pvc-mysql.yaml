@@ -1,0 +1,13 @@
+### 2. PVC for MySQL ###
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    storageClassName: name-of-your-storage-class
+    requests:
+      storage: 10Gi

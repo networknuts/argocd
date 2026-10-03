@@ -1,0 +1,36 @@
+### 7. SyncFail Hook: Secure Database Outage ###
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-sync-fail-alert
+  annotations:
+    argocd.argoproj.io/hook: SyncFail
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      containers:
+      - name: database-alert-sender
+        image: curlimages/curl:latest
+        env:
+        - name: WEBHOOK_URL
+          valueFrom:
+            secretKeyRef:
+              name: mysql-credentials
+              key: webhook-url
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "🚨 CRITICAL: Argo CD Sync failed during MySQL lifecycle operations!"
+            if [ -z "\(WEBHOOK_URL" ] \vert{}\vert{} [ "\)WEBHOOK_URL" = "YOUR_BASE64_WEBHOOK_URL_HERE" ]; then
+              echo "Notification skipped: webhook URL not configured."
+              exit 0
+            fi
+            
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{"text":"🚨 *Argo CD Data Tier Sync Failure!* \n *App:* `mysql-deployment` \n *Incident:* PreSync backup or PostSync live query validations threw an execution failure."}' \
+              "\$WEBHOOK_URL"
+      restartPolicy: Never
+  backoffLimit: 0
+

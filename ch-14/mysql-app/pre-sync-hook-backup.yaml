@@ -1,0 +1,35 @@
+### 3. PreSync Hook: Database Backup ###
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-presync-backup
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: db-backup-executor
+        image: mysql:8.0
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-credentials
+              key: mysql-root-password
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Starting PreSync database backup..."
+            # Check if the service is reachable (only skips if this is a first-time fresh install)
+            if getent hosts mysql-service; then
+              echo "Existing MySQL instance found. Taking safety backup snapshot..."
+              mysqldump -h mysql-service -u root -p"\$MYSQL_ROOT_PASSWORD" --all-databases --single-transaction > /tmp/presync-backup.sql
+              echo "Backup completed successfully!"
+            else
+              echo "First-time deployment detected. Skipping initial backup."
+            fi
+      restartPolicy: Never
+  backoffLimit: 1

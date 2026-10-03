@@ -1,0 +1,37 @@
+### 6. PostSync Hook: Health Validation ###
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-postsync-validation
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      containers:
+      - name: db-readiness-verifier
+        image: mysql:8.0
+        env:
+        - name: MYSQL_PWD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-credentials
+              key: mysql-password
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Initiating live connection probes to MySQL..."
+            for i in \$(seq 1 10); do
+              if mysql -h mysql-service -u app_user -e "SELECT 1;" production_db > /dev/null 2>&1; then
+                echo "Database connection verified and query executed successfully on attempt \$i!"
+                exit 0
+              fi
+              echo "Database engine not fully ready yet. Retrying in 5 seconds (Attempt \$i/10)..."
+              sleep 5
+            done
+            echo "CRITICAL: PostSync validation failed. Database unreachable."
+            exit 1
+      restartPolicy: Never
+  backoffLimit: 0
