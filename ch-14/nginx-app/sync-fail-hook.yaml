@@ -1,0 +1,26 @@
+### 5. SyncFail Hook: Deployment Failure Notification ###
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nginx-sync-fail-notification
+  annotations:
+    argocd.argoproj.io/hook: SyncFail
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      containers:
+      - name: alert-sender
+        image: curlimages/curl:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "❌ CRITICAL: Argo CD deployment failed for nginx-deployment!"
+            echo "Sending notification alert to webhook endpoint..."
+            # Replace the mock URL below with your real Slack/Teams webhook or alerting service
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{"text":"🔴 Argo CD Sync Failed for nginx-deployment. PreSync syntax check, rollout, or PostSync health probes encountered an error."}' \
+              https://httpbin.org
+      restartPolicy: Never
+  backoffLimit: 0

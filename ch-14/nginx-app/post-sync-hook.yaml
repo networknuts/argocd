@@ -1,0 +1,31 @@
+### 4. PostSync Hook: Smoke Test ###
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nginx-postsync-smoke-test
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      containers:
+      - name: smoke-tester
+        image: curlimages/curl:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Starting smoke test against internal Nginx service..."
+            for i in $(seq 1 5); do
+              if curl -sS --fail http://nginx-service:80 > /dev/null; then
+                echo "Smoke test passed on attempt $i!"
+                exit 0
+              fi
+              echo "Attempt $i failed, retrying in 3 seconds..."
+              sleep 3
+            done
+            echo "Smoke test failed completely!"
+            exit 1
+      restartPolicy: Never
+  backoffLimit: 0

@@ -1,0 +1,17 @@
+### 1. PreSync Hook: Pre-deployment Config Check ###
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nginx-presync-config-check
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: boxone
+        image: nginx:1.27-alpine
+        command: ["nginx", "-t"]
+      restartPolicy: Never
+  backoffLimit: 1
