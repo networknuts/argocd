@@ -34,4 +34,6 @@ spec:
       # immediately before the promotion. If omitted, the default behavior is to promote the new
       # stack as soon as the ReplicaSet are completely ready/available.
       # Rollouts can be resumed using: `kubectl argo rollouts promote ROLLOUT`
-      autoPromotionEnabled: false
+      autoPromotionEnabled: true
+      # How long to wait before scaling down the old version after promotion
+      scaleDownDelaySeconds: 30
